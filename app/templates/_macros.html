@@ -1,0 +1,24 @@
+{% macro bet_pill(b) -%}
+  {%- if b.result == 'won' %}<span class="pill won">Won {{ b.collect|money }}</span>
+  {%- elif b.result == 'lost' %}<span class="pill lost">Lost</span>
+  {%- else %}<span class="pill pending">Pending</span>{% endif %}
+  {%- if b.bonus %} <span class="pill bonus" title="Bonus bet - not paid from stake">Bonus</span>{% endif %}
+{%- endmacro %}
+
+{% macro signed(v) -%}
+  <span class="{{ 'pos' if v > 0 else 'neg' if v < 0 else '' }}">{{ v|money(true) }}</span>
+{%- endmacro %}
+
+{% macro month_tabs(view, month, base) -%}
+<div class="tabs">
+  {% for label in view.labels %}
+    <a href="{{ base }}{{ loop.index0 }}" class="{{ 'on' if loop.index0 == month }} {{ 'current' if loop.index0 == view.current }}">{{ label[:3] }}</a>
+  {% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro bet_text(b, with_stake=true) -%}
+  {%- set d = b.description or '' -%}
+  {%- if with_stake and not d.startswith('$') %}{{ b.stake|money }} {% endif -%}
+  {{ d }}{% if b.odds and b.odds not in d %} @ {{ b.odds }}{% endif %}
+{%- endmacro %}

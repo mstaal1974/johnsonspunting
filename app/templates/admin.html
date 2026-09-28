@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% from "_macros.html" import bet_pill, bet_text, month_tabs %}
+{% block content %}
+<h1>Enter bets</h1>
+<p class="sub">Everything else - carry-over, banking, penalties, Brownlow votes and the leaderboard - is worked out automatically.</p>
+
+<div class="panel">
+  <h2 style="margin-top:0">Add a bet · {{ view.labels[month] }}</h2>
+  <form class="grid" method="post" action="/admin/bets">
+    {% with members = active_members, bet = none %}{% include "_bet_fields.html" %}{% endwith %}
+    <div class="wide">
+      <div id="avail" class="hint">Pick a punter to see what they have left to bet in {{ view.labels[month] }}.</div>
+      <p><button type="submit">Save bet</button></p>
+    </div>
+  </form>
+</div>
+<script>
+  (function () {
+    var info = {
+      {% for m in active_members %}{% set l = view.summaries[m.id].months[month] %}
+      "{{ m.id }}": {left: {{ '%.2f'|format(l.available - l.staked) }}, avail: {{ '%.2f'|format(l.available) }}, bets: {{ l.bets }}},
+      {% endfor %}
+    };
+    var max = {{ view.season.max_bets }}, sel = document.getElementById('member'), out = document.getElementById('avail');
+    sel.addEventListener('change', function () {
+      var i = info[sel.value];
+      if (!i) return;
+      var msg = '$' + i.avail.toFixed(2) + ' to bet this month · $' + Math.max(0, i.left).toFixed(2) + ' left · ' + i.bets + ' of ' + max + ' bets used';
+      if (i.left < 0) msg += ' · already overspent by $' + (-i.left).toFixed(2);
+      if (i.bets >= max) msg += ' · at the bet limit';
+      out.textContent = msg;
+    });
+  })();
+</script>
+
+{% if pending %}
+<h2>Bets waiting for a result ({{ pending|length }})</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Month</th><th>Punter</th><th class="n">Stake</th><th>Bet</th><th>Settle</th></tr></thead>
+  <tbody>
+  {% for b in pending %}
+    <tr>
+      <td>{{ view.labels[b.month][:3] }}</td>
+      <td>{{ b.member.name }}</td>
+      <td class="n">{{ b.stake|money }}</td>
+      <td>{{ bet_text(b, false) }}{% if b.bonus %} <span class="pill bonus">Bonus</span>{% endif %}</td>
+      <td>
+        <form class="inline" method="post" action="/admin/bets/{{ b.id }}/settle">
+          <input name="collect" inputmode="decimal" placeholder="Collect $" aria-label="Collect">
+          <button class="sm" name="result" value="won">Won</button>
+          <button class="sm ghost" name="result" value="lost" formnovalidate>Lost</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+
+<h2>All bets · {{ view.labels[month] }}</h2>
+{{ month_tabs(view, month, "/admin?month=") }}
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Punter</th><th class="n">Stake</th><th>Bet</th><th>Result</th><th></th></tr></thead>
+  <tbody>
+  {% for b in month_bets %}
+    <tr>
+      <td>{{ b.member.name }}</td>
+      <td class="n">{{ b.stake|money }}</td>
+      <td>{{ bet_text(b, false) }}</td>
+      <td>{{ bet_pill(b) }}</td>
+      <td style="white-space:nowrap">
+        <a class="btn sm ghost" href="/admin/bets/{{ b.id }}">Edit</a>
+        <form class="inline" method="post" action="/admin/bets/{{ b.id }}/delete" onsubmit="return confirm('Delete this bet?')"><button class="sm danger">Delete</button></form>
+      </td>
+    </tr>
+  {% else %}<tr><td colspan="5" class="muted">No bets entered for {{ view.labels[month] }} yet.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

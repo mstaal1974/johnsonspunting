@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Edit bet</h1>
+<div class="panel">
+  <form class="grid" method="post" action="/admin/bets/{{ bet.id }}">
+    {% with members = view.members, month = bet.month %}{% include "_bet_fields.html" %}{% endwith %}
+    <div class="wide"><button type="submit">Save changes</button> <a class="btn ghost" href="/admin?month={{ bet.month }}">Cancel</a></div>
+  </form>
+</div>
+{% endblock %}

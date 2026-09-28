@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Members</h1>
+<p class="sub">Inactive members drop off the leaderboard unless they have bets this season.</p>
+<div class="panel">
+  <form class="inline" method="post" action="/admin/members">
+    <input name="name" placeholder="New member name" required style="width:220px">
+    <button>Add member</button>
+  </form>
+</div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Name</th><th>Active</th><th></th></tr></thead>
+  <tbody>
+  {% for m in members %}
+    <tr>
+      <td><input form="m{{ m.id }}" name="name" value="{{ m.name }}" required style="max-width:240px;margin:0" aria-label="Name"></td>
+      <td><input form="m{{ m.id }}" type="checkbox" name="active" {{ 'checked' if m.active }} aria-label="Active"></td>
+      <td><form id="m{{ m.id }}" method="post" action="/admin/members/{{ m.id }}"><button class="sm ghost">Save</button></form></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

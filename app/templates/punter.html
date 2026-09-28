@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_macros.html" import bet_pill, bet_text, signed %}
+{% block content %}
+<h1>{{ member.name }}</h1>
+<p class="sub">Ranked #{{ rank }} on total banked · Season {{ view.season.name }}</p>
+<div class="cards">
+  <div class="card"><div class="k">Banked</div><div class="v">{{ s.banked|money }}</div></div>
+  <div class="card"><div class="k">Net</div><div class="v">{{ signed(s.net) }}</div></div>
+  <div class="card"><div class="k">Collected</div><div class="v">{{ s.collect|money }}</div></div>
+  <div class="card"><div class="k">Strike rate</div><div class="v">{{ '-' if s.strike_rate is none else '%.0f%%'|format(s.strike_rate * 100) }}</div></div>
+  <div class="card"><div class="k">Brownlow</div><div class="v">{{ s.brownlow }}</div></div>
+</div>
+
+<h2>Month by month</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Month</th><th class="n">Stake to bet</th><th class="n">Staked</th><th class="n">Collect</th><th class="n">Banked</th><th class="n hide-sm">Carry</th><th class="n">Votes</th><th>Notes</th></tr></thead>
+  <tbody>
+  {% for l in s.months %}
+    <tr class="{{ 'muted' if loop.index0 > view.current }}">
+      <td><a href="/month/{{ l.month }}">{{ view.labels[l.month] }}</a></td>
+      <td class="n">{{ l.available|money }}</td>
+      <td class="n">{{ l.staked|money }}</td>
+      <td class="n">{{ l.collect|money }}</td>
+      <td class="n">{{ l.banked|money }}</td>
+      <td class="n hide-sm">{{ l.carry_out|money }}</td>
+      <td class="n">{% if l.brownlow %}<span class="pill votes">{{ l.brownlow }}</span>{% endif %}</td>
+      <td class="small">{{ l.flags|join('; ') }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2>Bets</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Month</th><th class="n">Stake</th><th>Bet</th><th>Result</th></tr></thead>
+  <tbody>
+  {% for b in bets %}
+    <tr><td>{{ view.labels[b.month] }}</td><td class="n">{{ b.stake|money }}</td><td>{{ bet_text(b, false) }}</td><td>{{ bet_pill(b) }}</td></tr>
+  {% else %}<tr><td colspan="4" class="muted">No bets yet.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

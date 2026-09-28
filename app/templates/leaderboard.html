@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "_macros.html" import signed %}
+{% block content %}
+<h1>Leaderboard</h1>
+<p class="sub">Season {{ view.season.name }} · {{ view.current_label }} · ${{ '%g'|format(view.season.base_stake) }} a month, half of every collect banked and half added to next month's stake.</p>
+
+<div class="cards">
+  <div class="card"><div class="k">Paid in</div><div class="v">{{ totals.contributed|money }}</div></div>
+  <div class="card"><div class="k">Collected</div><div class="v">{{ totals.collect|money }}</div></div>
+  <div class="card"><div class="k">Banked</div><div class="v">{{ totals.banked|money }}</div></div>
+  <div class="card"><div class="k">Bets pending</div><div class="v">{{ totals.pending }}</div></div>
+</div>
+
+<div class="tabs">
+  <span class="muted small" style="align-self:center">Rank by</span>
+  {% for key, label in sorts.items() %}<a href="/?sort={{ key }}" class="{{ 'on' if key == sort }}">{{ label }}</a>{% endfor %}
+</div>
+
+<div class="table-wrap">
+<table>
+  <thead><tr>
+    <th>#</th><th>Punter</th>
+    <th class="n">Banked</th>
+    <th class="n hide-sm">Net</th>
+    <th class="n hide-sm">ROI</th>
+    <th class="n hide-sm">Collected</th>
+    <th class="n hide-sm">Staked</th>
+    <th class="n hide-sm">Won / bets</th>
+    <th class="n">Brownlow</th>
+    {% if 0 <= view.current < 12 %}<th class="n">Left to bet<br>{{ view.labels[view.current][:3] }}</th>{% endif %}
+  </tr></thead>
+  <tbody>
+  {% for rank, m, s in rows %}
+    <tr class="{{ 'top1' if rank == 1 }}">
+      <td class="rank">{{ rank }}</td>
+      <td class="name"><a href="/punter/{{ m.id }}">{{ m.name }}</a>{% if not m.active %} <span class="muted small">(inactive)</span>{% endif %}</td>
+      <td class="n"><strong>{{ s.banked|money }}</strong></td>
+      <td class="n hide-sm">{{ signed(s.net) }}</td>
+      <td class="n hide-sm">{{ s.roi|pct }}</td>
+      <td class="n hide-sm">{{ s.collect|money }}</td>
+      <td class="n hide-sm">{{ s.staked|money }}</td>
+      <td class="n hide-sm">{{ s.winners }} / {{ s.bets }}{% if s.pending %} <span class="muted small">({{ s.pending }} open)</span>{% endif %}</td>
+      <td class="n">{% if s.brownlow %}<span class="pill votes">{{ s.brownlow }}</span>{% else %}<span class="muted">0</span>{% endif %}</td>
+      {% if 0 <= view.current < 12 %}<td class="n avail">{{ s.current_available|money }}</td>{% endif %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="hint">Net = banked minus what's been paid in so far. Brownlow votes: 3-2-1 each month to the three biggest collects. <a href="/export.xlsx">Download as Excel</a> · <a href="/api/leaderboard">JSON</a></p>
+{% endblock %}

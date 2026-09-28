@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Johnsons Punt Club{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%8F%87%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="/">Johnsons Punt Club{% if view %}<small>{{ view.season.name }}</small>{% endif %}</a>
+    <nav>
+      <a href="/" {% if request.url.path == '/' %}class="on"{% endif %}>Leaderboard</a>
+      <a href="/month/{{ view.default_month if view else 0 }}" {% if request.url.path.startswith('/month') %}class="on"{% endif %}>Months</a>
+      {% if is_admin %}
+        <a href="/admin" {% if request.url.path.startswith('/admin') and request.url.path not in ['/admin/members','/admin/data'] %}class="on"{% endif %}>Enter bets</a>
+        <a href="/admin/members" {% if request.url.path == '/admin/members' %}class="on"{% endif %}>Members</a>
+        <a href="/admin/data" {% if request.url.path == '/admin/data' %}class="on"{% endif %}>Season &amp; data</a>
+        <a href="/logout">Log out</a>
+      {% else %}
+        <a href="/login">Admin</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  {% for f in flashes %}<div class="flash {{ f.kind }}">{{ f.text }}</div>{% endfor %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>
