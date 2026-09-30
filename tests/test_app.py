@@ -100,3 +100,9 @@ def test_admin_flow():
         c.post(f"/admin/bets/{bet.id}/delete")
         with SessionLocal() as db:
             assert db.get(Bet, bet.id) is None
+
+
+def test_favicon():
+    with TestClient(app) as c:
+        r = c.get("/favicon.ico")
+        assert r.status_code == 200 and r.headers["content-type"].startswith("image/svg+xml")
