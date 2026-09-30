@@ -1,0 +1,7 @@
+{# Expects: line, view #}
+<div class="cards">
+  <div class="card"><div class="k">To bet this month</div><div class="v">{{ line.available|money }}</div></div>
+  <div class="card"><div class="k">Left</div><div class="v">{{ (line.available - line.staked)|money }}</div></div>
+  <div class="card"><div class="k">Bets used</div><div class="v">{{ line.bets }} / {{ view.season.max_bets }}</div></div>
+</div>
+{% if line.carry_in or line.penalty_in %}<p class="hint" style="margin-top:-10px">{{ line.base|money }}{% if line.carry_in %} + {{ line.carry_in|money }} from last month's win{% endif %}{% if line.penalty_in %} − {{ line.penalty_in|money }} overspent last month{% endif %}</p>{% endif %}

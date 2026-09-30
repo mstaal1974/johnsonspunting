@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Edit bet</h1>
+<div class="panel">
+  <form class="grid" method="post" action="/me/bets/{{ bet.id }}">
+    <label>Stake ($) <input name="stake" inputmode="decimal" required value="{{ '%g'|format(bet.stake) }}"></label>
+    <label>Odds <input name="odds" value="{{ bet.odds or '' }}"></label>
+    <label class="wide">Bet <input name="description" required value="{{ bet.description }}"></label>
+    <label class="check"><input type="checkbox" name="bonus" {{ 'checked' if bet.bonus }}> Bonus bet (doesn't use your stake)</label>
+    <div class="wide"><button type="submit">Save changes</button> <a class="btn ghost" href="/me">Cancel</a></div>
+  </form>
+</div>
+{% endblock %}

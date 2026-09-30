@@ -154,7 +154,7 @@ def import_workbook(db: Session, data: bytes, today: date | None = None, zero_co
         db.add(Bet(
             season_id=season.id, member_id=members[pb.name.lower()].id, month=pb.month,
             stake=pb.stake, description=pb.description, odds=pb.odds,
-            result=result, collect=bet_collect, bonus=pb.bonus,
+            result=result, collect=bet_collect, bonus=pb.bonus, source="import",
         ))
     db.commit()
     return {"season": season.name, "members": len(p.names), "bets": len(p.bets), "warnings": p.warnings}

@@ -67,7 +67,7 @@
   <tbody>
   {% for b in month_bets %}
     <tr>
-      <td>{{ b.member.name }}</td>
+      <td>{{ b.member.name }}{% if b.source in ('punter', 'slip') %}<div class="muted small">{{ 'scanned slip' if b.source == 'slip' else 'by punter' }}</div>{% endif %}</td>
       <td class="n">{{ b.stake|money }}</td>
       <td>{{ bet_text(b, false) }}</td>
       <td>{{ bet_pill(b) }}</td>

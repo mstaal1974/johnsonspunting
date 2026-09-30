@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% from "_macros.html" import bet_pill, bet_text %}
+{% block content %}
+<h1>Hi {{ member.name }}</h1>
+{% if month is none %}
+  <p class="sub">{{ view.current_label }} - bets can't be entered right now.</p>
+{% else %}
+<p class="sub">{{ view.labels[month] }} · <a href="/punter/{{ member.id }}">your season so far</a></p>
+{% include "_stake_cards.html" %}
+
+{% if can_scan %}
+<div class="panel">
+  <h2 style="margin-top:0">Scan a bet slip</h2>
+  <p class="hint" style="margin-top:0">Take a photo or pick a screenshot. You'll check the details before anything is saved.</p>
+  <form id="slip-form" method="post" action="/me/slip" enctype="multipart/form-data">
+    <input id="slip-file" type="file" name="photo" accept="image/*" required>
+    <p><button id="slip-btn" type="submit">Read my slip</button> <span id="slip-status" class="muted small"></span></p>
+  </form>
+</div>
+<script>
+  // Shrink phone photos before upload: faster, and keeps under upload size limits.
+  (function () {
+    var form = document.getElementById('slip-form'), input = document.getElementById('slip-file');
+    var btn = document.getElementById('slip-btn'), status = document.getElementById('slip-status');
+    var busy = false;
+    form.addEventListener('submit', function (e) {
+      if (busy) return;
+      var file = input.files[0];
+      if (!file) return;
+      e.preventDefault();
+      busy = true; btn.disabled = true; status.textContent = 'Reading your slip… this takes a few seconds.';
+      var done = function () { form.submit(); };
+      var img = new Image(), url = URL.createObjectURL(file);
+      img.onload = function () {
+        try {
+          var scale = Math.min(1, 1800 / Math.max(img.width, img.height));
+          var c = document.createElement('canvas');
+          c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          c.toBlob(function (blob) {
+            try {
+              var dt = new DataTransfer();
+              dt.items.add(new File([blob], 'slip.jpg', {type: 'image/jpeg'}));
+              input.files = dt.files;
+            } catch (err) {}
+            done();
+          }, 'image/jpeg', 0.85);
+        } catch (err) { done(); }
+      };
+      img.onerror = done;
+      img.src = url;
+    });
+  })();
+</script>
+{% endif %}
+
+<div class="panel">
+  <h2 style="margin-top:0">{{ 'Or type' if can_scan else 'Add' }} a bet</h2>
+  <form class="grid" method="post" action="/me/bets">
+    <label>Stake ($) <input name="bets-0-stake" inputmode="decimal" required placeholder="25"></label>
+    <label>Odds <input name="bets-0-odds" placeholder="$4.50"></label>
+    <label class="wide">Bet <input name="bets-0-description" required placeholder="W Snitzel Dancer R7 Randwick"></label>
+    <label class="check"><input type="checkbox" name="bets-0-bonus"> Bonus bet (doesn't use your stake)</label>
+    <div class="wide"><button type="submit">Save bet</button></div>
+  </form>
+</div>
+
+<h2>Your bets in {{ view.labels[month] }}</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th class="n">Stake</th><th>Bet</th><th></th></tr></thead>
+  <tbody>
+  {% for b in bets %}
+    <tr>
+      <td class="n">{{ b.stake|money }}</td>
+      <td>{{ bet_text(b, false) }}<div style="margin-top:4px">{{ bet_pill(b) }}</div></td>
+      <td>
+        {% if b.result == 'pending' %}
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:stretch">
+          <a class="btn sm ghost" href="/me/bets/{{ b.id }}" style="text-align:center">Edit</a>
+          <form method="post" action="/me/bets/{{ b.id }}/delete" onsubmit="return confirm('Delete this bet?')" style="margin:0"><button class="sm danger" style="width:100%">Delete</button></form>
+        </div>
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}<tr><td colspan="3" class="muted">No bets yet this month.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="hint">Results are entered by the club admin once your bets have run.</p>
+{% endif %}
+{% endblock %}

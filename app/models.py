@@ -20,6 +20,9 @@ class Member(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), unique=True, nullable=False)
     active = Column(Boolean, nullable=False, default=True)
+    pin_hash = Column(String(200), nullable=True)  # set by the admin; lets the punter enter bets
+    failed_logins = Column(Integer, nullable=False, default=0, server_default="0")
+    locked_until = Column(DateTime(timezone=True), nullable=True)
 
 
 class Bet(Base):
@@ -34,6 +37,7 @@ class Bet(Base):
     result = Column(String(10), nullable=False, default="pending")  # pending/won/lost
     collect = Column(Float, nullable=False, default=0.0)
     bonus = Column(Boolean, nullable=False, default=False)  # bookmaker bonus bet, not paid from stake
+    source = Column(String(10), nullable=False, default="admin", server_default="admin")  # admin/punter/slip/import
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     member = relationship("Member")

@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles  # noqa: E402
 from starlette.middleware.sessions import SessionMiddleware  # noqa: E402
 
 from app.db import init_db  # noqa: E402
-from app.routes import admin, public  # noqa: E402
+from app.routes import admin, public, punter  # noqa: E402
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
@@ -35,3 +35,4 @@ def favicon():
 
 app.include_router(public.router)
 app.include_router(admin.router)
+app.include_router(punter.router)

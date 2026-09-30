@@ -5,8 +5,9 @@ A small web app that runs the punt club spreadsheet for you. You enter each bet 
 - **Leaderboard** (public, no login): ranked by total banked, Brownlow votes, ROI or total collected. It also shows what each punter has left to bet this month.
 - **Month sheets** (public): each punter's stake, bets, results, collect, banked amount and carry-over, with rule warnings.
 - **Punter pages** (public): a punter's month-by-month history and every bet.
-- **Enter bets** (admin): add a bet, settle pending bets with one click (Won + collect amount, or Lost), and edit or delete bets.
-- **Members** (admin): add, rename or deactivate punters.
+- **My bets** (punters, with a PIN): see what's left to bet this month and enter bets. They can scan a photo or screenshot of a bet slip (Claude reads it and fills in the form for them to check and correct) or type them in. They can edit or delete their own bets while they're pending.
+- **Bets & results** (admin): add a bet, settle pending bets with one click (Won + collect amount, or Lost), and edit or delete bets. Bets entered by punters are marked.
+- **Members** (admin): add, rename or deactivate punters, and set each punter's PIN (their login link is shown next to it).
 - **Season & data** (admin): monthly stake, max bets and start month; start next season; import the existing Excel workbook; export to Excel.
 
 ## The rules it applies
@@ -49,14 +50,25 @@ Vercel detects it as a FastAPI project and serves the `app` in `api/index.py`. D
 
 1. Import the GitHub repo in Vercel (no build settings needed).
 2. **Add a database.** Go to the project's **Storage** tab, create a **Neon** (Postgres) database and connect it to the project. This sets `POSTGRES_URL`/`DATABASE_URL` for you. Without it the app still runs, but Vercel wipes the data whenever the function restarts. Admins see a red warning when that's the case.
-3. Under **Settings → Environment Variables**, add `ADMIN_PASSWORD` and `SECRET_KEY` (any long random string).
+3. Under **Settings → Environment Variables**, add `ADMIN_PASSWORD` and `SECRET_KEY` (any long random string). To turn on bet-slip scanning, also add `ANTHROPIC_API_KEY` (create one at console.anthropic.com). Without it punters type their bets in instead.
 4. Redeploy, open the site, log in and import the workbook under **Season & data**.
+
+## Punters entering their own bets
+
+1. As admin, open **Members**, type a 4-8 digit PIN next to each punter and click **Save**.
+2. Send each punter their PIN and login link (shown on the Members page, e.g. `https://your-site/me/login?m=3`).
+3. They open **My bets**, then either tap **Read my slip** and pick a photo or screenshot of their bet slip, or type the bet in.
+4. After a scan they see the bets Claude read, with a running check against what they have left and the bet limit. They fix anything wrong, untick anything they don't want and tap **Save bets**. Nothing is saved until they do.
+
+Punters can only add bets to the current month and only change their own pending bets. Results are still entered by the admin. After 5 wrong PINs, that punter is locked out for 15 minutes.
+
+Slip scanning uses Claude (`claude-opus-5-5` by default; set `SLIP_MODEL` to change it) and costs a few cents per slip at most. If Claude declines to read an image, the request is automatically retried on a fallback model.
 
 ## Deploy elsewhere (Render, Railway, any host that runs Python)
 
 - Build command: `pip install -r requirements.txt`
 - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- Environment: `ADMIN_PASSWORD`, `SECRET_KEY` and `DATABASE_URL` (Postgres)
+- Environment: `ADMIN_PASSWORD`, `SECRET_KEY`, `DATABASE_URL` (Postgres) and optionally `ANTHROPIC_API_KEY`
 
 ## Tests
 
@@ -73,6 +85,8 @@ app/services/club.py     loads a season from the database and runs the rules
 app/services/excel_io.py import/export in the club spreadsheet's layout
 app/routes/public.py     leaderboard, month and punter pages, /api/leaderboard
 app/routes/admin.py      login, bet entry, members, settings, import
+app/routes/punter.py     punter PIN login and self-service bet entry
+app/services/slip_reader.py  reads bet slip photos with Claude
 app/templates/           pages
 ```
 

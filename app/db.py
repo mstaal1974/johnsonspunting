@@ -5,7 +5,7 @@ import threading
 from pathlib import Path
 
 from fastapi import HTTPException
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import NullPool
 
@@ -55,9 +55,34 @@ def init_db():
         if DATA_DIR is not None:
             DATA_DIR.mkdir(exist_ok=True, parents=True)
         Base.metadata.create_all(bind=engine)
+        add_missing_columns()
         with SessionLocal() as db:
             ensure_seed(db)
         _ready = True
+
+
+def add_missing_columns():
+    """Add columns introduced after a table was first created.
+
+    create_all only creates missing tables, so a database set up by an older
+    version of the app would lack newer columns. New columns are either
+    nullable or have a server default, so adding them is always safe.
+    """
+    insp = inspect(engine)
+    with engine.begin() as conn:
+        for table in Base.metadata.sorted_tables:
+            if not insp.has_table(table.name):
+                continue
+            have = {c["name"] for c in insp.get_columns(table.name)}
+            for col in table.columns:
+                if col.name in have:
+                    continue
+                ddl = f"ALTER TABLE {table.name} ADD COLUMN {col.name} {col.type.compile(engine.dialect)}"
+                if col.server_default is not None:
+                    ddl += f" DEFAULT '{col.server_default.arg}'"
+                    if not col.nullable:
+                        ddl += " NOT NULL"
+                conn.execute(text(ddl))
 
 
 def get_db():

@@ -11,6 +11,7 @@ from app.engine import LOST, MONTHS_PER_SEASON, PENDING, WON
 from app.models import Bet, Member, Season
 from app.services.club import build_view, season_name
 from app.services.excel_io import export_workbook, import_workbook
+from app.services.pins import hash_pin, valid_pin
 from app.templating import flash, is_admin, render
 
 router = APIRouter()
@@ -201,16 +202,24 @@ def add_member(request: Request, name: str = Form(...), db: Session = Depends(ge
 
 @router.post("/admin/members/{member_id}", dependencies=[Depends(require_admin)])
 def update_member(request: Request, member_id: int, name: str = Form(...), active: str = Form("off"),
-                  db: Session = Depends(get_db)):
+                  pin: str = Form(""), clear_pin: str = Form("off"), db: Session = Depends(get_db)):
     m = db.get(Member, member_id) or _404()
     name = name.strip()
     clash = db.query(Member).filter(Member.name.ilike(name), Member.id != member_id).first()
     if not name or clash:
         flash(request, "Name is empty or already taken", "error")
         return back("/admin/members")
+    pin = pin.strip()
+    if pin and not valid_pin(pin):
+        flash(request, "A PIN must be 4 to 8 digits", "error")
+        return back("/admin/members")
     m.name, m.active = name, active == "on"
+    if pin:
+        m.pin_hash, m.failed_logins, m.locked_until = hash_pin(pin), 0, None
+    elif clear_pin == "on":
+        m.pin_hash = None
     db.commit()
-    flash(request, f"Updated {m.name}.")
+    flash(request, f"Updated {m.name}." + (" New PIN saved - give them the PIN and their login link." if pin else ""))
     return back("/admin/members")
 
 

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Check your bets</h1>
+<p class="sub">This is what we read from your slip. Fix anything that's wrong, untick anything you don't want, then save.</p>
+{% if note %}<div class="flash warn">{{ note }}</div>{% endif %}
+{% include "_stake_cards.html" %}
+
+<form method="post" action="/me/bets">
+  <input type="hidden" name="has-keep" value="1">
+  <input type="hidden" name="from_slip" value="1">
+  {% for r in rows %}
+  <div class="panel slip-row">
+    <label class="check" style="margin-bottom:8px"><input type="checkbox" name="bets-{{ loop.index0 }}-keep" checked> <strong>Save this bet</strong></label>
+    <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;align-items:end">
+      <label>Stake ($) <input name="bets-{{ loop.index0 }}-stake" inputmode="decimal" required value="{{ '%g'|format(r.stake) }}"></label>
+      <label>Odds <input name="bets-{{ loop.index0 }}-odds" value="{{ r.odds }}"></label>
+      <label style="grid-column:1/-1">Bet <input name="bets-{{ loop.index0 }}-description" required value="{{ r.description }}"></label>
+      <label class="check"><input type="checkbox" name="bets-{{ loop.index0 }}-bonus" {{ 'checked' if r.bonus }}> Bonus bet (doesn't use your stake)</label>
+    </div>
+  </div>
+  {% endfor %}
+  <div id="check" class="hint"></div>
+  <p><button type="submit">Save bets</button> <a class="btn ghost" href="/me">Cancel</a></p>
+</form>
+<script>
+  (function () {
+    var left = {{ '%.2f'|format(line.available - line.staked) }}, used = {{ line.bets }}, max = {{ view.season.max_bets }};
+    var out = document.getElementById('check');
+    function update() {
+      var stake = 0, count = 0;
+      document.querySelectorAll('.slip-row').forEach(function (row, i) {
+        var keep = row.querySelector('[name="bets-' + i + '-keep"]').checked;
+        var bonus = row.querySelector('[name="bets-' + i + '-bonus"]').checked;
+        var v = parseFloat((row.querySelector('[name="bets-' + i + '-stake"]').value || '0').replace(/[$,]/g, '')) || 0;
+        row.style.opacity = keep ? 1 : 0.5;
+        if (keep && !bonus) { stake += v; count += 1; }
+      });
+      var msgs = ['These use $' + stake.toFixed(2) + ' of the $' + Math.max(0, left).toFixed(2) + ' you have left.'];
+      if (stake > left + 0.001) msgs.push('That is $' + (stake - left).toFixed(2) + ' over - it will come off next month.');
+      if (used + count > max) msgs.push('That makes ' + (used + count) + ' bets this month - the limit is ' + max + '.');
+      out.textContent = msgs.join(' ');
+      out.style.color = msgs.length > 1 ? 'var(--bad)' : '';
+    }
+    document.querySelector('form').addEventListener('input', update);
+    document.querySelector('form').addEventListener('change', update);
+    update();
+  })();
+</script>
+{% endblock %}

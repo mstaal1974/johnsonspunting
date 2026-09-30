@@ -6,5 +6,7 @@ sqlalchemy
 openpyxl
 itsdangerous
 python-dotenv
+# Reads photographed bet slips (needs ANTHROPIC_API_KEY)
+anthropic
 # Only needed if DATABASE_URL points at Postgres
 psycopg[binary]

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Members</h1>
-<p class="sub">Inactive members drop off the leaderboard unless they have bets this season.</p>
+<p class="sub">Give each punter a PIN (4-8 digits) so they can enter their own bets at <strong>{{ request.base_url }}me</strong>. Inactive members drop off the leaderboard unless they have bets this season.</p>
 <div class="panel">
   <form class="inline" method="post" action="/admin/members">
     <input name="name" placeholder="New member name" required style="width:220px">
@@ -10,12 +10,18 @@
 </div>
 <div class="table-wrap">
 <table>
-  <thead><tr><th>Name</th><th>Active</th><th></th></tr></thead>
+  <thead><tr><th>Name</th><th>Active</th><th>PIN</th><th class="hide-sm">Login link</th><th></th></tr></thead>
   <tbody>
   {% for m in members %}
     <tr>
-      <td><input form="m{{ m.id }}" name="name" value="{{ m.name }}" required style="max-width:240px;margin:0" aria-label="Name"></td>
+      <td><input form="m{{ m.id }}" name="name" value="{{ m.name }}" required style="max-width:200px;margin:0" aria-label="Name"></td>
       <td><input form="m{{ m.id }}" type="checkbox" name="active" {{ 'checked' if m.active }} aria-label="Active"></td>
+      <td style="white-space:nowrap">
+        <input form="m{{ m.id }}" name="pin" inputmode="numeric" pattern="[0-9]{4,8}" autocomplete="off"
+               placeholder="{{ 'Change PIN' if m.pin_hash else 'Set PIN' }}" style="width:110px;margin:0" aria-label="PIN for {{ m.name }}">
+        {% if m.pin_hash %}<div class="small"><span class="pos">PIN set</span> · <label class="check" style="display:inline-flex"><input form="m{{ m.id }}" type="checkbox" name="clear_pin"> remove</label></div>{% endif %}
+      </td>
+      <td class="hide-sm small">{% if m.pin_hash %}<a href="/me/login?m={{ m.id }}">{{ request.base_url }}me/login?m={{ m.id }}</a>{% else %}<span class="muted">Set a PIN first</span>{% endif %}</td>
       <td><form id="m{{ m.id }}" method="post" action="/admin/members/{{ m.id }}"><button class="sm ghost">Save</button></form></td>
     </tr>
   {% endfor %}

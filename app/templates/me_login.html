@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="panel" style="max-width:380px;margin:40px auto">
+  <h1>Enter your bets</h1>
+  <p class="sub">Log in with the PIN the club admin gave you.</p>
+  {% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+  {% if members %}
+  <form method="post" action="/me/login">
+    <label>Your name
+      <select name="member_id" required>
+        <option value="">Choose…</option>
+        {% for m in members %}<option value="{{ m.id }}" {{ 'selected' if m.id == selected }}>{{ m.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <p><label>PIN <input type="password" name="pin" inputmode="numeric" autocomplete="current-password" pattern="[0-9]*" required></label></p>
+    <p><button type="submit">Log in</button></p>
+  </form>
+  {% else %}
+  <p>No one has a PIN yet. The club admin sets them on the Members page.</p>
+  {% endif %}
+</div>
+{% endblock %}
