@@ -41,15 +41,22 @@ uvicorn app.main:app --reload --port 8000
 
 Open http://localhost:8000. The first start creates the 2025-2026 season and the 20 current members. To load this season's bets, log in (Admin), go to **Season & data** and upload `Johnsons_Punt_Club_2025-2026.xlsx`.
 
-Data is stored in SQLite at `data/club.db`, or in the database named by `DATABASE_URL`.
+Data is stored in SQLite at `data/club.db`, or in the Postgres database named by `DATABASE_URL` (or `POSTGRES_URL`).
 
-## Deploy (Render, Railway, or any host that runs Python)
+## Deploy on Vercel
+
+The repo includes `api/index.py` and `vercel.json`, so Vercel runs it as a Python function.
+
+1. Import the GitHub repo in Vercel (no build settings needed).
+2. **Add a database.** Go to the project's **Storage** tab, create a **Neon** (Postgres) database and connect it to the project. This sets `POSTGRES_URL`/`DATABASE_URL` for you. Without it the app still runs, but Vercel wipes the data whenever the function restarts. Admins see a red warning when that's the case.
+3. Under **Settings → Environment Variables**, add `ADMIN_PASSWORD` and `SECRET_KEY` (any long random string).
+4. Redeploy, open the site, log in and import the workbook under **Season & data**.
+
+## Deploy elsewhere (Render, Railway, any host that runs Python)
 
 - Build command: `pip install -r requirements.txt`
 - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- Environment: `ADMIN_PASSWORD`, `SECRET_KEY` (any long random string) and `DATABASE_URL`
-
-Use a Postgres database for `DATABASE_URL` on hosted platforms. Their free-tier disks are wiped on redeploy, so a SQLite file would lose the club's data.
+- Environment: `ADMIN_PASSWORD`, `SECRET_KEY` and `DATABASE_URL` (Postgres)
 
 ## Tests
 

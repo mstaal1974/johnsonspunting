@@ -100,3 +100,20 @@ def test_admin_flow():
         c.post(f"/admin/bets/{bet.id}/delete")
         with SessionLocal() as db:
             assert db.get(Bet, bet.id) is None
+
+
+def test_favicon():
+    with TestClient(app) as c:
+        r = c.get("/favicon.ico")
+        assert r.status_code == 200 and r.headers["content-type"].startswith("image/svg+xml")
+
+
+def test_database_failure_shows_reason(monkeypatch):
+    from app import db
+
+    def boom():
+        raise RuntimeError("connection refused")
+
+    monkeypatch.setattr(db, "init_db", boom)
+    r = TestClient(app).get("/")
+    assert r.status_code == 503 and "connection refused" in r.text
