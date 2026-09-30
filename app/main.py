@@ -24,7 +24,7 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="Johnsons Punt Club", lifespan=lifespan)
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "dev-only-change-me"))
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR, check_dir=False), name="static")
 
 
 # Browsers request /favicon.ico on their own, whatever the page's <link rel="icon"> says

@@ -1,8 +1,10 @@
+import logging
 import os
 import tempfile
 import threading
 from pathlib import Path
 
+from fastapi import HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import NullPool
@@ -60,7 +62,11 @@ def init_db():
 
 def get_db():
     # Some hosts (e.g. Vercel) don't run ASGI startup events, so set up on first use
-    init_db()
+    try:
+        init_db()
+    except Exception as e:
+        logging.exception("Database setup failed")
+        raise HTTPException(503, f"Couldn't set up the database - {type(e).__name__}: {e}")
     db = SessionLocal()
     try:
         yield db
