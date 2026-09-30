@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "_macros.html" import bet_pill, bet_text, month_tabs %}
+{% block content %}
+<h1>{{ view.labels[month] }}</h1>
+<p class="sub">
+  {% if month < view.current %}Month closed - unused stake was forfeited.
+  {% elif month == view.current %}Month in progress.
+  {% else %}Upcoming month - stakes shown include carry-over so far.{% endif %}
+  {% if is_admin %}<a href="/admin?month={{ month }}">Enter bets for this month →</a>{% endif %}
+</p>
+{{ month_tabs(view, month, "/month/") }}
+
+{% if votes %}
+<div class="panel">
+  <strong>Brownlow votes:</strong>
+  {% for pts, m in votes %}<span class="pill votes">{{ pts }}</span> {{ m.name }} ({{ view.summaries[m.id].months[month].collect|money }}){% if not loop.last %} · {% endif %}{% endfor %}
+  {% if mentions %}<br><span class="muted small">Special mentions: {% for m in mentions %}{{ m.name }} ({{ view.summaries[m.id].months[month].collect|money }}){% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}
+</div>
+{% endif %}
+
+<div class="table-wrap">
+<table>
+  <thead><tr>
+    <th>Punter</th><th class="n">Stake to bet</th><th>Bets</th>
+    <th class="n">Staked</th><th class="n">Collect</th><th class="n">Banked</th><th class="n hide-sm">Carry to next</th>
+  </tr></thead>
+  <tbody>
+  {% for m in view.members %}
+    {% set l = view.summaries[m.id].months[month] %}
+    <tr>
+      <td><a href="/punter/{{ m.id }}">{{ m.name }}</a></td>
+      <td class="n">
+        <span class="avail">{{ l.available|money }}</span>
+        {% if l.carry_in or l.penalty_in %}<div class="muted small">{{ l.base|money }}{% if l.carry_in %} + {{ l.carry_in|money }} won{% endif %}{% if l.penalty_in %} − {{ l.penalty_in|money }} overspend{% endif %}</div>{% endif %}
+      </td>
+      <td>
+        {% for b in bets_by_member.get(m.id, []) %}
+          <div>{{ bet_text(b) }} {{ bet_pill(b) }}</div>
+        {% else %}<span class="muted">-</span>{% endfor %}
+        {% if l.flags %}<ul class="flags">{% for f in l.flags %}<li>{{ f }}</li>{% endfor %}</ul>{% endif %}
+      </td>
+      <td class="n">{{ l.staked|money }}</td>
+      <td class="n">{{ l.collect|money }}</td>
+      <td class="n">{{ l.banked|money }}</td>
+      <td class="n hide-sm">{{ l.carry_out|money }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

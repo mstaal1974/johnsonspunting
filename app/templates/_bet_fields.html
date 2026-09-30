@@ -1,0 +1,37 @@
+{# Shared fields for add + edit. Expects: view, members, bet (optional), month #}
+<label>Month
+  <select name="month" {% if not bet %}onchange="location='/admin?month='+this.value"{% endif %}>
+    {% for label in view.labels %}<option value="{{ loop.index0 }}" {{ 'selected' if loop.index0 == (bet.month if bet else month) }}>{{ label }}</option>{% endfor %}
+  </select>
+</label>
+<label>Punter
+  <select name="member_id" id="member" required>
+    {% if not bet %}<option value="">Choose…</option>{% endif %}
+    {% for m in members %}<option value="{{ m.id }}" {{ 'selected' if bet and bet.member_id == m.id }}>{{ m.name }}</option>{% endfor %}
+  </select>
+</label>
+<label>Stake ($)
+  <input name="stake" inputmode="decimal" required value="{{ '%g'|format(bet.stake) if bet else '' }}" placeholder="25">
+</label>
+<label>Odds
+  <input name="odds" value="{{ bet.odds or '' if bet else '' }}" placeholder="$4.50">
+</label>
+<label class="wide">Bet
+  <input name="description" value="{{ bet.description if bet else '' }}" placeholder="W Snitzel Dancer, R7 Randwick">
+</label>
+<label>Result
+  <select name="result" id="result">
+    {% for r in ['pending','won','lost'] %}<option value="{{ r }}" {{ 'selected' if (bet.result if bet else 'pending') == r }}>{{ r|capitalize }}</option>{% endfor %}
+  </select>
+</label>
+<label>Collect ($) <span class="muted small">total returned if won</span>
+  <input name="collect" id="collect" inputmode="decimal" value="{{ '%g'|format(bet.collect) if bet and bet.collect else '' }}" placeholder="0">
+</label>
+<label class="check"><input type="checkbox" name="bonus" {{ 'checked' if bet and bet.bonus }}> Bonus bet (doesn't use stake)</label>
+<script>
+  (function () {
+    var r = document.getElementById('result'), c = document.getElementById('collect');
+    function sync() { c.disabled = r.value !== 'won'; }
+    r.addEventListener('change', sync); sync();
+  })();
+</script>

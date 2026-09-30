@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="panel" style="max-width:380px;margin:40px auto">
+  <h1>Admin login</h1>
+  <p class="sub">Only needed to enter or change bets. Anyone can view the leaderboard.</p>
+  {% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+  <form method="post">
+    <label>Password <input type="password" name="password" autofocus required></label>
+    <p><button type="submit">Log in</button></p>
+  </form>
+</div>
+{% endblock %}

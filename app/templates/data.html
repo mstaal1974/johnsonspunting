@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Season &amp; data</h1>
+
+<div class="panel">
+  <h2 style="margin-top:0">Season {{ view.season.name }}</h2>
+  <form class="grid" method="post" action="/admin/settings">
+    <label>First month <input type="month" name="start" value="{{ view.season.start.strftime('%Y-%m') }}" required></label>
+    <label>Monthly stake ($) <input name="base_stake" inputmode="decimal" value="{{ '%g'|format(view.season.base_stake) }}" required></label>
+    <label>Max bets a month <input type="number" name="max_bets" min="1" value="{{ view.season.max_bets }}" required></label>
+    <div><button>Save settings</button></div>
+  </form>
+  <form method="post" action="/admin/new-season" onsubmit="return confirm('Start a new season? The current one is kept but no longer shown.')">
+    <p class="hint">When this season ends: <button class="sm ghost">Start next season</button></p>
+  </form>
+</div>
+
+<div class="panel">
+  <h2 style="margin-top:0">Import from the club spreadsheet</h2>
+  <p class="hint">Upload the existing <em>Johnsons Punt Club</em> workbook. The season is taken from the month dates in its "Bets" sheet, and any bets already entered for that season are replaced. Bets containing "BONER" or "bonus" are imported as bonus bets.</p>
+  <form method="post" action="/admin/import" enctype="multipart/form-data">
+    <p><input type="file" name="file" accept=".xlsx" required></p>
+    <label class="check"><input type="checkbox" name="zero_is_lost" checked> Mark bets in finished months with a $0 collect as lost</label>
+    <p><button>Import</button></p>
+  </form>
+</div>
+
+<div class="panel">
+  <h2 style="margin-top:0">Export</h2>
+  <p><a class="btn" href="/export.xlsx">Download Excel</a> <span class="hint">Leaderboard, a Bets sheet in the familiar month-by-month layout, Total Banked and Brownlow.</span></p>
+</div>
+{% endblock %}
