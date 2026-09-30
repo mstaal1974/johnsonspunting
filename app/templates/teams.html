@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Teams</h1>
+<p class="sub">Each month the team whose punters win the most Brownlow votes between them gets 3 points, the next 2, then 1. Ties share the higher score.</p>
+
+{% if not teams %}
+  <p class="muted">No teams set up yet{% if is_admin %} - <a href="/admin/teams">add them here</a>{% endif %}.</p>
+{% else %}
+{% set shown = [view.current + 1, 12]|min %}
+<h2>Points by month</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr>
+    <th>#</th><th>Team</th>
+    {% for label in view.labels[:shown] %}<th class="n">{{ label[:3] }}</th>{% endfor %}
+    <th class="n">Total</th>
+  </tr></thead>
+  <tbody>
+  {% for rank, t, ts in teams %}
+    <tr class="{{ 'top1' if rank == 1 and ts.points }}">
+      <td class="rank">{{ rank }}</td>
+      <td class="name"><a href="#team-{{ t.id }}">{{ t.name }}</a></td>
+      {% for m in range(shown) %}
+        <td class="n small">{% if ts.month_points[m] %}<span class="pill votes">{{ ts.month_points[m] }}</span>{% elif ts.month_votes[m] %}<span class="muted">·</span>{% else %}<span class="muted">-</span>{% endif %}
+          {% if ts.month_votes[m] %}<div class="muted" title="Brownlow votes">{{ ts.month_votes[m] }}v</div>{% endif %}</td>
+      {% endfor %}
+      <td class="n"><strong>{{ ts.points }}</strong><div class="muted small">{{ ts.votes }}v</div></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="hint">Gold = team points that month; "v" = the team's Brownlow votes that month.</p>
+
+<h2>Team members</h2>
+<div class="team-grid">
+{% for rank, t, ts in teams %}
+  <div class="panel" id="team-{{ t.id }}">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+      <strong style="font-size:17px">#{{ rank }} {{ t.name }}</strong>
+      <span><span class="pill votes">{{ ts.points }} pts</span></span>
+    </div>
+    <table style="margin-top:8px">
+      <thead><tr><th>Punter</th><th class="n">Votes</th><th class="n">Banked</th>{% if 0 <= view.current < 12 %}<th class="n">Left {{ view.labels[view.current][:3] }}</th>{% endif %}</tr></thead>
+      <tbody>
+      {% for m in view.team_members(t) %}
+        {% set s = view.summaries[m.id] %}
+        <tr>
+          <td><a href="/punter/{{ m.id }}">{{ m.name }}</a></td>
+          <td class="n">{{ s.brownlow }}</td>
+          <td class="n">{{ s.banked|money }}</td>
+          {% if 0 <= view.current < 12 %}<td class="n avail">{{ s.current_available|money }}</td>{% endif %}
+        </tr>
+      {% else %}<tr><td colspan="4" class="muted">No punters yet.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endfor %}
+</div>
+{% set unassigned = view.members|rejectattr('id', 'in', view.team_of.keys()|list)|selectattr('active')|list %}
+{% if unassigned %}<p class="hint">Not in a team: {{ unassigned|map(attribute='name')|join(', ') }}</p>{% endif %}
+{% endif %}
+{% endblock %}

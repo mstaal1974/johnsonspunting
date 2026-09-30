@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% from "_macros.html" import signed %}
+{% block content %}
+<h1>Dashboard</h1>
+<p class="sub">Season {{ view.season.name }} · {{ view.current_label }}</p>
+
+{# --- Your stake -------------------------------------------------------- #}
+{% if me and me_line %}
+  {% set left = me_line.available - me_line.staked %}
+  <section class="hero">
+    <div>
+      <div class="hero-name">{{ me.name }}{% if view.team_of.get(me.id) %} · {{ view.team_of[me.id].name }}{% endif %}</div>
+      <div class="hero-amount {{ 'neg' if left < 0 }}">{{ left|money }}</div>
+      <div class="hero-label">left to bet in {{ view.labels[view.current] }}</div>
+      <div class="hero-sub">
+        {{ me_line.available|money }} this month{% if me_line.carry_in %} (includes {{ me_line.carry_in|money }} from last month's win){% endif %}{% if me_line.penalty_in %} (less {{ me_line.penalty_in|money }} overspent last month){% endif %}
+        · {{ me_line.bets }} of {{ view.season.max_bets }} bets used
+      </div>
+    </div>
+    <a class="btn hero-btn" href="/me">Enter a bet</a>
+  </section>
+{% elif month_open %}
+  <p class="panel small" style="margin-bottom:16px"><a href="/me">Log in with your PIN</a> to see your own stake at the top and enter bets.</p>
+{% endif %}
+
+{% if month_open %}
+<h2>What everyone has to bet in {{ view.labels[view.current] }}</h2>
+<div class="stake-grid">
+  {% for m in view.members if m.active %}
+    {% set l = view.summaries[m.id].months[view.current] %}
+    {% set left = l.available - l.staked %}
+    <a class="stake {{ 'me' if me and me.id == m.id }} {{ 'boost' if l.carry_in }}" href="/punter/{{ m.id }}">
+      <span class="stake-name">{{ m.name }}</span>
+      <span class="stake-amount {{ 'neg' if left < 0 }}">{{ left|money }}</span>
+      <span class="stake-sub">{% if l.staked or l.bets %}left of {{ l.available|money }}{% else %}to bet{% endif %}{% if l.carry_in %} · ▲ win{% endif %}</span>
+    </a>
+  {% endfor %}
+</div>
+<p class="hint">"▲ win" means half of last month's collect was added to this month's $50.</p>
+{% endif %}
+
+{# --- Teams -------------------------------------------------------------- #}
+<h2>Team leaderboard</h2>
+{% if teams %}
+<div class="table-wrap">
+<table>
+  <thead><tr>
+    <th>#</th><th>Team</th>
+    <th class="n">Points</th>
+    {% if month_open %}<th class="n hide-sm">Votes {{ view.labels[view.current][:3] }}</th>{% endif %}
+    <th class="n">Votes</th>
+    <th class="n hide-sm">Banked</th>
+  </tr></thead>
+  <tbody>
+  {% for rank, t, ts in teams %}
+    <tr class="{{ 'top1' if rank == 1 and ts.points }}">
+      <td class="rank">{{ rank }}</td>
+      <td><a href="/teams#team-{{ t.id }}"><strong>{{ t.name }}</strong></a>
+        <div class="muted small">{{ view.team_members(t)|map(attribute='name')|join(', ') or 'No punters yet' }}</div></td>
+      <td class="n"><span class="pill votes big">{{ ts.points }}</span></td>
+      {% if month_open %}<td class="n hide-sm">{{ ts.month_votes[view.current] }}</td>{% endif %}
+      <td class="n">{{ ts.votes }}</td>
+      <td class="n hide-sm">{{ ts.banked|money }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="hint">Each month the team whose punters win the most Brownlow votes between them gets 3 points, the next 2, then 1. <a href="/teams">Month-by-month →</a></p>
+{% else %}
+<p class="muted">No teams set up yet{% if is_admin %} - <a href="/admin/teams">add them here</a>{% endif %}.</p>
+{% endif %}
+
+{# --- Individuals -------------------------------------------------------- #}
+<h2>Individual leaderboard</h2>
+<div class="tabs">
+  <span class="muted small" style="align-self:center">Rank by</span>
+  {% for key, label in sorts.items() %}<a href="/?sort={{ key }}" class="{{ 'on' if key == sort }}">{{ label }}</a>{% endfor %}
+</div>
+<div class="table-wrap">
+<table>
+  <thead><tr>
+    <th>#</th><th>Punter</th>
+    <th class="n">Banked</th>
+    <th class="n hide-sm">Net</th>
+    <th class="n hide-sm">ROI</th>
+    <th class="n hide-sm">Collected</th>
+    <th class="n hide-sm">Won / bets</th>
+    <th class="n">Brownlow</th>
+  </tr></thead>
+  <tbody>
+  {% for rank, m, s in rows %}
+    <tr class="{{ 'top1' if rank == 1 }} {{ 'me-row' if me and me.id == m.id }}">
+      <td class="rank">{{ rank }}</td>
+      <td class="name"><a href="/punter/{{ m.id }}">{{ m.name }}</a>{% if not m.active %} <span class="muted small">(inactive)</span>{% endif %}
+        {% if view.team_of.get(m.id) %}<div class="muted small">{{ view.team_of[m.id].name }}</div>{% endif %}</td>
+      <td class="n"><strong>{{ s.banked|money }}</strong></td>
+      <td class="n hide-sm">{{ signed(s.net) }}</td>
+      <td class="n hide-sm">{{ s.roi|pct }}</td>
+      <td class="n hide-sm">{{ s.collect|money }}</td>
+      <td class="n hide-sm">{{ s.winners }} / {{ s.bets }}{% if s.pending %} <span class="muted small">({{ s.pending }} open)</span>{% endif %}</td>
+      <td class="n">{% if s.brownlow %}<span class="pill votes">{{ s.brownlow }}</span>{% else %}<span class="muted">0</span>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="hint">Net = banked minus what's been paid in so far. Brownlow votes: 3-2-1 each month to the three biggest collects.</p>
+
+<div class="cards" style="margin-top:24px">
+  <div class="card"><div class="k">Paid in</div><div class="v">{{ totals.contributed|money }}</div></div>
+  <div class="card"><div class="k">Collected</div><div class="v">{{ totals.collect|money }}</div></div>
+  <div class="card"><div class="k">Banked</div><div class="v">{{ totals.banked|money }}</div></div>
+  <div class="card"><div class="k">Bets pending</div><div class="v">{{ totals.pending }}</div></div>
+</div>
+<p class="hint"><a href="/export.xlsx">Download as Excel</a> · <a href="/api/leaderboard">JSON</a></p>
+{% endblock %}

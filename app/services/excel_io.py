@@ -232,6 +232,17 @@ def export_workbook(view: SeasonView) -> bytes:
                 for c in range(2, 3 + len(view.labels)):
                     ws.cell(r, c).number_format = money
 
+    if view.teams:
+        ws = wb.create_sheet("Teams")
+        _header(ws, 2, ["Rank", "Team", "Points", "Votes", "Banked", "Punters"]
+                + [f"{l[:3]} pts" for l in view.labels])
+        for r, (rank, t, ts) in enumerate(view.ranked_teams(), start=3):
+            ws.append([rank, t.name, ts.points, ts.votes, ts.banked,
+                       ", ".join(m.name for m in view.team_members(t))] + ts.month_points)
+            ws.cell(r, 5).number_format = money
+        ws.column_dimensions["B"].width = 18
+        ws.column_dimensions["F"].width = 40
+
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()

@@ -125,3 +125,41 @@ form.inline input { width: 110px; margin: 0; }
   th { white-space: normal; font-size: 11px; letter-spacing: 0; }
   h1 { font-size: 20px; }
 }
+
+/* Dashboard: your stake */
+.hero {
+  display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: var(--brand); color: var(--brand-ink); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 20px;
+}
+.hero-name { font-weight: 600; opacity: .9; }
+.hero-amount { font-size: 48px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; margin-top: 4px; }
+.hero-amount.neg { color: #ffb4ab; }
+.hero-label { font-size: 17px; font-weight: 600; }
+.hero-sub { font-size: 13px; opacity: .85; margin-top: 6px; }
+.btn.hero-btn { background: var(--accent); border-color: var(--accent); color: #1c1c1c; font-size: 16px; padding: 10px 18px; }
+
+/* Dashboard: everyone's stake this month */
+.stake-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.stake {
+  display: flex; flex-direction: column; text-decoration: none; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px;
+}
+.stake:hover { border-color: var(--brand); }
+.stake.boost { border-color: var(--accent); }
+.stake.me { outline: 2px solid var(--brand); }
+.stake-name { font-size: 13px; color: var(--muted); font-weight: 600; }
+.stake-amount { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stake-amount.neg { color: var(--bad); }
+.stake-sub { font-size: 12px; color: var(--muted); }
+.pill.big { font-size: 15px; padding: 2px 10px; }
+tr.me-row td { background: var(--surface-2); }
+
+.team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+.team-grid .panel { margin-bottom: 0; }
+
+@media (max-width: 720px) {
+  .stake-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stake { padding: 8px; }
+  .stake-amount { font-size: 18px; }
+  .hero-amount { font-size: 40px; }
+}

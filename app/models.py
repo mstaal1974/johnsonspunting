@@ -41,3 +41,22 @@ class Bet(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     member = relationship("Member")
+
+
+class Team(Base):
+    """A team within one season; teams can be reshuffled each season."""
+    __tablename__ = "teams"
+    id = Column(Integer, primary_key=True)
+    season_id = Column(Integer, ForeignKey("seasons.id"), nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+
+    memberships = relationship("TeamMember", back_populates="team", cascade="all, delete-orphan")
+
+
+class TeamMember(Base):
+    __tablename__ = "team_members"
+    id = Column(Integer, primary_key=True)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False, index=True)
+    member_id = Column(Integer, ForeignKey("members.id"), nullable=False, index=True)
+
+    team = relationship("Team", back_populates="memberships")

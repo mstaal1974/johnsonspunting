@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 
 from sqlalchemy.orm import Session
 
 from app import engine
-from app.models import Bet, Member, Season
+from app.models import Bet, Member, Season, Team, TeamMember
 
 DEFAULT_PUNTERS = [
     "Andrew", "Ben", "Brad", "Col", "Darren", "Glenn", "Greg", "Jimmy E", "Jimmy P",
@@ -55,6 +55,9 @@ class SeasonView:
     current: int  # index of month in progress (-1 before season, 12 after)
     labels: list[str]
     bets: list[Bet]
+    teams: list[Team] = field(default_factory=list)
+    team_summaries: dict[int, engine.TeamSummary] = field(default_factory=dict)
+    team_of: dict[int, Team] = field(default_factory=dict)  # member id -> team
 
     @property
     def current_label(self) -> str:
@@ -90,6 +93,20 @@ class SeasonView:
             out.append((rank, m, s))
         return out
 
+    def ranked_teams(self) -> list[tuple[int, Team, engine.TeamSummary]]:
+        key = lambda t: (self.team_summaries[t.id].points, self.team_summaries[t.id].votes,
+                         self.team_summaries[t.id].banked)
+        rows = sorted(self.teams, key=lambda t: (key(t), -t.id), reverse=True)
+        out, prev, rank = [], None, 0
+        for i, t in enumerate(rows, start=1):
+            if key(t) != prev:
+                rank, prev = i, key(t)
+            out.append((rank, t, self.team_summaries[t.id]))
+        return out
+
+    def team_members(self, team: Team) -> list[Member]:
+        return [m for m in self.members if self.team_of.get(m.id) is team]
+
     def totals(self) -> dict[str, float]:
         ss = self.summaries.values()
         return {
@@ -121,4 +138,15 @@ def build_view(db: Session, season: Season | None = None, today: date | None = N
         season.max_bets,
         current,
     )
-    return SeasonView(season, members, summaries, mentions, current, month_labels(season), bets)
+    teams = db.query(Team).filter(Team.season_id == season.id).order_by(Team.name).all()
+    by_id = {m.id: m for m in members}
+    team_of: dict[int, Team] = {}
+    team_ids: dict[int, list[int]] = {t.id: [] for t in teams}
+    for tm in (db.query(TeamMember).filter(TeamMember.team_id.in_(team_ids)).all() if teams else []):
+        if tm.member_id in by_id and tm.member_id not in team_of:
+            team_of[tm.member_id] = tm.team
+            team_ids[tm.team_id].append(tm.member_id)
+    return SeasonView(
+        season, members, summaries, mentions, current, month_labels(season), bets,
+        teams=teams, team_summaries=engine.compute_teams(team_ids, summaries, current), team_of=team_of,
+    )

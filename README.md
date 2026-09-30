@@ -2,11 +2,13 @@
 
 A small web app that runs the punt club spreadsheet for you. You enter each bet and its result, and the app works out stakes, carry-overs, banking, penalties, Brownlow votes and the leaderboard.
 
-- **Leaderboard** (public, no login): ranked by total banked, Brownlow votes, ROI or total collected. It also shows what each punter has left to bet this month.
+- **Dashboard** (public, no login): what every punter has left to bet this month (with a big "$X left to bet" card at the top for a punter logged in with their PIN), the team leaderboard, and the individual leaderboard (ranked by total banked, Brownlow votes, ROI or total collected).
+- **Teams** (public): team points month by month, and each team's punters with their votes, banked amount and stake left this month.
 - **Month sheets** (public): each punter's stake, bets, results, collect, banked amount and carry-over, with rule warnings.
 - **Punter pages** (public): a punter's month-by-month history and every bet.
 - **My bets** (punters, with a PIN): see what's left to bet this month and enter bets. They can scan a photo or screenshot of a bet slip (Claude reads it and fills in the form for them to check and correct) or type them in. They can edit or delete their own bets while they're pending.
 - **Bets & results** (admin): add a bet, settle pending bets with one click (Won + collect amount, or Lost), and edit or delete bets. Bets entered by punters are marked.
+- **Edit teams** (admin): create, rename or delete teams for the season and put punters into them. Starting a new season carries the teams over, ready to reshuffle.
 - **Members** (admin): add, rename or deactivate punters, and set each punter's PIN (their login link is shown next to it).
 - **Season & data** (admin): monthly stake, max bets and start month; start next season; import the existing Excel workbook; export to Excel.
 
@@ -24,6 +26,7 @@ Seasons run October to September. Each month, for each punter:
 | Bet limit | 2 bets a month. Going over is flagged. |
 | Bonus bets | bookmaker bonus bets ("BONER") don't use stake or count towards the limit. Their collect counts as normal. |
 | Brownlow | 3-2-1 votes each month to the three biggest collects (ties share the higher score). The next two get special mentions. |
+| Team points | each month the members' Brownlow votes are added up per team. The team with the most gets 3 points, the next 2, then 1 (ties share the higher score). Teams are ranked on points, then total votes, then total banked. |
 
 "Collect" is the total the bookmaker paid out, stake included. A $10 win at $3.00 is a $30 collect, so $15 is banked and $15 goes on top of next month's $50.
 

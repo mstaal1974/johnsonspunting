@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.engine import LOST, MONTHS_PER_SEASON, PENDING, WON
-from app.models import Bet, Member, Season
+from app.models import Bet, Member, Season, Team, TeamMember
 from app.services.club import build_view, season_name
 from app.services.excel_io import export_workbook, import_workbook
 from app.services.pins import hash_pin, valid_pin
@@ -223,6 +223,76 @@ def update_member(request: Request, member_id: int, name: str = Form(...), activ
     return back("/admin/members")
 
 
+# --- Teams ------------------------------------------------------------------
+
+@router.get("/admin/teams", dependencies=[Depends(require_admin)])
+def teams_page(request: Request, db: Session = Depends(get_db)):
+    view = build_view(db)
+    return render(request, "teams_admin.html", view=view, active_members=[m for m in view.members if m.active])
+
+
+def _season_team(db: Session, team_id: int) -> Team:
+    team = db.get(Team, team_id)
+    if team is None or team.season_id != build_view(db).season.id:
+        raise HTTPException(404)
+    return team
+
+
+@router.post("/admin/teams", dependencies=[Depends(require_admin)])
+def add_team(request: Request, name: str = Form(...), db: Session = Depends(get_db)):
+    season = build_view(db).season
+    name = name.strip()
+    if not name:
+        flash(request, "Enter a team name", "error")
+    elif db.query(Team).filter(Team.season_id == season.id, Team.name.ilike(name)).first():
+        flash(request, f"There's already a team called {name}", "error")
+    else:
+        db.add(Team(season_id=season.id, name=name[:100]))
+        db.commit()
+        flash(request, f"Added team {name}. Now put punters in it below.")
+    return back("/admin/teams")
+
+
+@router.post("/admin/teams/assign", dependencies=[Depends(require_admin)])
+async def assign_teams(request: Request, db: Session = Depends(get_db)):
+    form = await request.form()
+    season = build_view(db).season
+    teams = {t.id: t for t in db.query(Team).filter(Team.season_id == season.id).all()}
+    for t in teams.values():
+        t.memberships = []
+    db.flush()
+    for key, value in form.items():
+        if key.startswith("team-") and value:
+            team = teams.get(int(value))
+            if team is not None:
+                team.memberships.append(TeamMember(member_id=int(key[5:])))
+    db.commit()
+    flash(request, "Teams saved.")
+    for t in teams.values():
+        if t.memberships and not 4 <= len(t.memberships) <= 5:
+            flash(request, f"{t.name} has {len(t.memberships)} punters (teams are usually 4 or 5).", "warn")
+    return back("/admin/teams")
+
+
+@router.post("/admin/teams/{team_id}", dependencies=[Depends(require_admin)])
+def rename_team(request: Request, team_id: int, name: str = Form(...), db: Session = Depends(get_db)):
+    team = _season_team(db, team_id)
+    if name.strip():
+        team.name = name.strip()[:100]
+        db.commit()
+        flash(request, f"Renamed to {team.name}.")
+    return back("/admin/teams")
+
+
+@router.post("/admin/teams/{team_id}/delete", dependencies=[Depends(require_admin)])
+def delete_team(request: Request, team_id: int, db: Session = Depends(get_db)):
+    team = _season_team(db, team_id)
+    db.delete(team)
+    db.commit()
+    flash(request, f"Deleted team {team.name}. Its punters are now unassigned.")
+    return back("/admin/teams")
+
+
 # --- Season settings, import & export ----------------------------------------
 
 @router.get("/admin/data", dependencies=[Depends(require_admin)])
@@ -259,10 +329,18 @@ def new_season(request: Request, db: Session = Depends(get_db)):
         flash(request, f"Season starting {start:%b %Y} already exists", "error")
         return back("/admin/data")
     old.active = False
-    db.add(Season(name=season_name(start), start=start, base_stake=old.base_stake,
-                  max_bets=old.max_bets, active=True))
+    new = Season(name=season_name(start), start=start, base_stake=old.base_stake,
+                 max_bets=old.max_bets, active=True)
+    db.add(new)
+    db.flush()
+    # Carry the teams over; the admin can reshuffle them on the Teams page
+    for t in db.query(Team).filter(Team.season_id == old.id).all():
+        copy = Team(season_id=new.id, name=t.name)
+        copy.memberships = [TeamMember(member_id=tm.member_id) for tm in t.memberships]
+        db.add(copy)
     db.commit()
-    flash(request, f"Started season {season_name(start)}. Everyone is back to ${old.base_stake:,.0f}.")
+    flash(request, f"Started season {season_name(start)}. Everyone is back to ${old.base_stake:,.0f}, "
+                   "and the teams have been carried over.")
     return back("/admin/data")
 
 

@@ -12,11 +12,20 @@ SORTS = {"banked": "Total banked", "brownlow": "Brownlow", "roi": "ROI", "collec
 
 
 @router.get("/")
-def leaderboard(request: Request, sort: str = "banked", db: Session = Depends(get_db)):
+def dashboard(request: Request, sort: str = "banked", db: Session = Depends(get_db)):
     view = build_view(db)
     sort = sort if sort in SORTS else "banked"
-    return render(request, "leaderboard.html", view=view, rows=view.ranked(sort), sort=sort,
-                  sorts=SORTS, totals=view.totals())
+    me = view.member(request.session.get("member_id") or 0)
+    month_open = 0 <= view.current < MONTHS_PER_SEASON
+    return render(request, "dashboard.html", view=view, rows=view.ranked(sort), sort=sort, sorts=SORTS,
+                  totals=view.totals(), teams=view.ranked_teams(), me=me, month_open=month_open,
+                  me_line=view.summaries[me.id].months[view.current] if me and month_open else None)
+
+
+@router.get("/teams")
+def teams(request: Request, db: Session = Depends(get_db)):
+    view = build_view(db)
+    return render(request, "teams.html", view=view, teams=view.ranked_teams())
 
 
 @router.get("/month/{month}")
@@ -33,8 +42,13 @@ def month_sheet(request: Request, month: int, db: Session = Depends(get_db)):
          if view.summaries[m.id].months[month].brownlow),
         key=lambda x: (-x[0], -view.summaries[x[1].id].months[month].collect),
     )
+    team_points = sorted(
+        ((ts.month_points[month], ts.month_votes[month], t) for t in view.teams
+         if (ts := view.team_summaries[t.id]).month_points[month]),
+        key=lambda x: (-x[0], -x[1], x[2].name),
+    )
     return render(request, "month.html", view=view, month=month, bets_by_member=bets_by_member,
-                  votes=votes, mentions=[view.member(i) for i in view.mentions[month]])
+                  votes=votes, mentions=[view.member(i) for i in view.mentions[month]], team_points=team_points)
 
 
 @router.get("/punter/{member_id}")
@@ -56,9 +70,15 @@ def api_leaderboard(sort: str = "banked", db: Session = Depends(get_db)):
         "season": view.season.name,
         "current_month": view.current_label,
         "leaderboard": [
-            {"rank": r, "punter": m.name, "banked": s.banked, "contributed": s.contributed, "net": s.net,
+            {"rank": r, "punter": m.name, "team": view.team_of[m.id].name if m.id in view.team_of else None,
+             "banked": s.banked, "contributed": s.contributed, "net": s.net,
              "roi": s.roi, "collected": s.collect, "staked": s.staked, "bets": s.bets, "winners": s.winners,
              "brownlow": s.brownlow, "available_this_month": s.current_available}
             for r, m, s in view.ranked(sort)
+        ],
+        "teams": [
+            {"rank": r, "team": t.name, "points": ts.points, "votes": ts.votes, "banked": ts.banked,
+             "members": [m.name for m in view.team_members(t)]}
+            for r, t, ts in view.ranked_teams()
         ],
     }

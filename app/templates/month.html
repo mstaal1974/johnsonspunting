@@ -14,6 +14,8 @@
 <div class="panel">
   <strong>Brownlow votes:</strong>
   {% for pts, m in votes %}<span class="pill votes">{{ pts }}</span> {{ m.name }} ({{ view.summaries[m.id].months[month].collect|money }}){% if not loop.last %} · {% endif %}{% endfor %}
+  {% if team_points %}<br><strong>Team points:</strong>
+    {% for pts, v, t in team_points %}<span class="pill votes">{{ pts }}</span> {{ t.name }} ({{ v }} vote{{ 's' if v != 1 }}){% if not loop.last %} · {% endif %}{% endfor %}{% endif %}
   {% if mentions %}<br><span class="muted small">Special mentions: {% for m in mentions %}{{ m.name }} ({{ view.summaries[m.id].months[month].collect|money }}){% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}
 </div>
 {% endif %}
@@ -28,7 +30,7 @@
   {% for m in view.members %}
     {% set l = view.summaries[m.id].months[month] %}
     <tr>
-      <td><a href="/punter/{{ m.id }}">{{ m.name }}</a></td>
+      <td><a href="/punter/{{ m.id }}">{{ m.name }}</a>{% if view.team_of.get(m.id) %}<div class="muted small">{{ view.team_of[m.id].name }}</div>{% endif %}</td>
       <td class="n">
         <span class="avail">{{ l.available|money }}</span>
         {% if l.carry_in or l.penalty_in %}<div class="muted small">{{ l.base|money }}{% if l.carry_in %} + {{ l.carry_in|money }} won{% endif %}{% if l.penalty_in %} − {{ l.penalty_in|money }} overspend{% endif %}</div>{% endif %}

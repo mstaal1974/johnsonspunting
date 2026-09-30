@@ -169,27 +169,32 @@ def compute_member(
     return s
 
 
-def award_brownlow(collects: dict[int, float]) -> tuple[dict[int, int], list[int]]:
-    """3-2-1 votes for the month's three biggest collects.
+def award_321(scores: dict[int, float], mentions: int = 0) -> tuple[dict[int, int], list[int]]:
+    """3-2-1 points for the three highest positive scores.
 
-    Ties share the higher score (standard competition ranking), so two punters
-    tied on top both get 3 and the next gets 1. Returns (votes, special
-    mentions) where mentions are the next best collects after the vote-getters.
+    Ties share the higher score (standard competition ranking), so two tied on
+    top both get 3 and the next gets 1. Also returns up to `mentions` ids of
+    the next best after the point-getters.
     """
-    ranked = sorted(((c, mid) for mid, c in collects.items() if c > 0), reverse=True)
-    votes: dict[int, int] = {}
-    mentions: list[int] = []
+    ranked = sorted(((sc, i) for i, sc in scores.items() if sc > 0), key=lambda x: -x[0])
+    points: dict[int, int] = {}
+    also: list[int] = []
     rank = 0
     prev = None
-    for i, (c, mid) in enumerate(ranked):
-        if c != prev:
-            rank = i
-            prev = c
+    for n, (sc, i) in enumerate(ranked):
+        if sc != prev:
+            rank, prev = n, sc
         if rank < len(BROWNLOW_POINTS):
-            votes[mid] = BROWNLOW_POINTS[rank]
-        elif len(mentions) < SPECIAL_MENTIONS:
-            mentions.append(mid)
-    return votes, mentions
+            points[i] = BROWNLOW_POINTS[rank]
+        elif len(also) < mentions:
+            also.append(i)
+    return points, also
+
+
+def award_brownlow(collects: dict[int, float]) -> tuple[dict[int, int], list[int]]:
+    """Individual votes: 3-2-1 for the month's three biggest collects, plus the
+    next two as special mentions."""
+    return award_321(collects, SPECIAL_MENTIONS)
 
 
 def compute_season(
@@ -220,3 +225,42 @@ def compute_season(
     for s in summaries.values():
         s.brownlow = sum(l.brownlow for l in s.months[: max(0, min(current + 1, MONTHS_PER_SEASON))])
     return summaries, mentions_by_month
+
+
+@dataclass
+class TeamSummary:
+    team_id: int
+    member_ids: list[int]
+    month_votes: list[int]  # members' Brownlow votes added up, per month
+    month_points: list[int]  # 3-2-1 team points, per month
+    points: int = 0
+    votes: int = 0
+    banked: float = 0.0
+    collect: float = 0.0
+
+
+def compute_teams(
+    teams: dict[int, list[int]],
+    summaries: dict[int, MemberSummary],
+    current: int,
+) -> dict[int, TeamSummary]:
+    """Each month the team whose members won the most Brownlow votes between
+    them gets 3 points, the next 2, then 1 (ties share the higher score)."""
+    months_open = max(0, min(current + 1, MONTHS_PER_SEASON))
+    out = {}
+    for tid, mids in teams.items():
+        ms = [summaries[m] for m in mids if m in summaries]
+        out[tid] = TeamSummary(
+            team_id=tid, member_ids=list(mids),
+            month_votes=[sum(s.months[m].brownlow for s in ms) for m in range(MONTHS_PER_SEASON)],
+            month_points=[0] * MONTHS_PER_SEASON,
+            banked=sum(s.banked for s in ms), collect=sum(s.collect for s in ms),
+        )
+    for m in range(MONTHS_PER_SEASON):
+        points, _ = award_321({tid: t.month_votes[m] for tid, t in out.items()})
+        for tid, pts in points.items():
+            out[tid].month_points[m] = pts
+    for t in out.values():
+        t.points = sum(t.month_points[:months_open])
+        t.votes = sum(t.month_votes[:months_open])
+    return out

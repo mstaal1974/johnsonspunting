@@ -12,13 +12,15 @@
   <div class="wrap">
     <a class="logo" href="/">Johnsons Punt Club{% if view %}<small>{{ view.season.name }}</small>{% endif %}</a>
     <nav>
-      <a href="/" {% if request.url.path == '/' %}class="on"{% endif %}>Leaderboard</a>
+      <a href="/" {% if request.url.path == '/' %}class="on"{% endif %}>Dashboard</a>
+      <a href="/teams" {% if request.url.path == '/teams' %}class="on"{% endif %}>Teams</a>
       <a href="/month/{{ view.default_month if view else 0 }}" {% if request.url.path.startswith('/month') %}class="on"{% endif %}>Months</a>
       <a href="/me" {% if request.url.path.startswith('/me') %}class="on"{% endif %}>My bets</a>
       {% if punter_name %}<a href="/me/logout" title="Log out {{ punter_name }}">Log out {{ punter_name }}</a>{% endif %}
       {% if is_admin %}
-        <a href="/admin" {% if request.url.path.startswith('/admin') and request.url.path not in ['/admin/members','/admin/data'] %}class="on"{% endif %}>Bets &amp; results</a>
+        <a href="/admin" {% if request.url.path.startswith('/admin') and request.url.path not in ['/admin/members','/admin/data','/admin/teams'] %}class="on"{% endif %}>Bets &amp; results</a>
         <a href="/admin/members" {% if request.url.path == '/admin/members' %}class="on"{% endif %}>Members</a>
+        <a href="/admin/teams" {% if request.url.path == '/admin/teams' %}class="on"{% endif %}>Edit teams</a>
         <a href="/admin/data" {% if request.url.path == '/admin/data' %}class="on"{% endif %}>Season &amp; data</a>
         <a href="/logout">Log out admin</a>
       {% else %}

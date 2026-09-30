@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Teams</h1>
+<p class="sub">Teams for season {{ view.season.name }}. Each month the team whose punters win the most Brownlow votes between them gets 3 points, the next 2, then 1.</p>
+
+<div class="panel">
+  <form class="inline" method="post" action="/admin/teams">
+    <input name="name" placeholder="New team name" required style="width:220px">
+    <button>Add team</button>
+  </form>
+  {% if view.teams %}
+  <div class="small" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:12px">
+    {% for t in view.teams %}
+      <span style="display:inline-flex;gap:6px;align-items:center">
+        <input form="t{{ t.id }}" name="name" value="{{ t.name }}" aria-label="Team name" style="width:150px;margin:0">
+        <form id="t{{ t.id }}" class="inline" method="post" action="/admin/teams/{{ t.id }}"><button class="sm ghost">Rename</button></form>
+        <form class="inline" method="post" action="/admin/teams/{{ t.id }}/delete" onsubmit="return confirm('Delete {{ t.name }}? Its punters become unassigned.')"><button class="sm danger">Delete</button></form>
+        <span class="muted">({{ view.team_members(t)|length }})</span>
+      </span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+{% if view.teams %}
+<h2>Who's in which team</h2>
+<form method="post" action="/admin/teams/assign">
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Punter</th><th>Team</th></tr></thead>
+  <tbody>
+  {% for m in active_members %}
+    {% set cur = view.team_of.get(m.id) %}
+    <tr>
+      <td>{{ m.name }}</td>
+      <td>
+        <select name="team-{{ m.id }}" aria-label="Team for {{ m.name }}" style="max-width:240px;margin:0">
+          <option value="">- No team -</option>
+          {% for t in view.teams %}<option value="{{ t.id }}" {{ 'selected' if cur is sameas t }}>{{ t.name }}</option>{% endfor %}
+        </select>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p><button>Save teams</button></p>
+</form>
+{% else %}
+<p class="muted">Add your first team above.</p>
+{% endif %}
+{% endblock %}
