@@ -7,4 +7,4 @@ openpyxl
 itsdangerous
 python-dotenv
 # Only needed if DATABASE_URL points at Postgres
-psycopg2-binary
+psycopg[binary]

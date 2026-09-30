@@ -3,6 +3,8 @@ import os
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
 
+from app.db import EPHEMERAL
+
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 
 
@@ -33,5 +35,6 @@ def flash(request: Request, message: str, kind: str = "ok") -> None:
 
 def render(request: Request, name: str, **ctx):
     ctx.setdefault("is_admin", is_admin(request))
+    ctx["ephemeral"] = EPHEMERAL
     ctx["flashes"] = request.session.pop("flash", [])
     return templates.TemplateResponse(request, name, ctx)

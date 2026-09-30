@@ -10,9 +10,8 @@ from fastapi.responses import FileResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from starlette.middleware.sessions import SessionMiddleware  # noqa: E402
 
-from app.db import SessionLocal, init_db  # noqa: E402
+from app.db import init_db  # noqa: E402
 from app.routes import admin, public  # noqa: E402
-from app.services.club import ensure_seed  # noqa: E402
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
@@ -20,8 +19,6 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_db()
-    with SessionLocal() as db:
-        ensure_seed(db)
     yield
 
 

@@ -26,6 +26,7 @@
   </div>
 </header>
 <main class="wrap">
+  {% if ephemeral and is_admin %}<div class="flash error"><strong>Data isn't being saved permanently.</strong> No database is connected, so bets are kept in temporary storage that Vercel wipes when the app restarts. Add a Postgres database (Vercel → Storage → Neon) and redeploy.</div>{% endif %}
   {% for f in flashes %}<div class="flash {{ f.kind }}">{{ f.text }}</div>{% endfor %}
   {% block content %}{% endblock %}
 </main>
