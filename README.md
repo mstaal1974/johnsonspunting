@@ -45,7 +45,7 @@ Data is stored in SQLite at `data/club.db`, or in the Postgres database named by
 
 ## Deploy on Vercel
 
-The repo includes `api/index.py` and `vercel.json`, so Vercel runs it as a Python function.
+Vercel detects it as a FastAPI project and serves the `app` in `api/index.py`. Don't add a `vercel.json` rewrite: Vercel now passes the rewritten path to FastAPI, so every page would 404.
 
 1. Import the GitHub repo in Vercel (no build settings needed).
 2. **Add a database.** Go to the project's **Storage** tab, create a **Neon** (Postgres) database and connect it to the project. This sets `POSTGRES_URL`/`DATABASE_URL` for you. Without it the app still runs, but Vercel wipes the data whenever the function restarts. Admins see a red warning when that's the case.
